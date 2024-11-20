@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 50px auto;
+            text-align: center;
+        }
+
+        input {
+            padding: 10px;
+            font-size: 18px;
+            width: 150px;
+            margin: 10px;
+        }
+
+        button {
+            padding: 10px;
+            font-size: 18px;
+            margin: 10px;
+        }
+
+        .result {
+            margin-top: 20px;
+            font-size: 24px;
+        }
+
+        .info {
+            margin-top: 30px;
+            font-size: 16px;
+        }
+
+        .rounding-options {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        .operation-container {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .operation-container input {
+            width: 130px;
+        }
+
+        .operation-container .bracket-left::before {
+            content: "(";
+            margin-right: 5px;
+            font-size: 20px;
+        }
+
+        .operation-container .bracket-right::after {
+            content: ")";
+            margin-left: 5px;
+            font-size: 20px;
+        }
+
+        .operation-container input,
+        .operation-container select {
+            margin: 0 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Калькулятор</h1>
+        <div class="operation-container">
+            <input type="text" id="number1" placeholder="Введите число 1" value="0">
+            <select id="operation1">
+                <option value="+">+</option>
+                <option value="-">-</option>
+                <option value="*">*</option>
+                <option value="/">/</option>
+            </select>
+            <span class="bracket-left"></span>
+            <input type="text" id="number2" placeholder="Введите число 2" value="0">
+        </div>
+        <div class="operation-container">
+            <select id="operation2">
+                <option value="+">+</option>
+                <option value="-">-</option>
+                <option value="*">*</option>
+                <option value="/">/</option>
+            </select>
+            <input type="text" id="number3" placeholder="Введите число 3" value="0">
+            <span class="bracket-right"></span>
+        </div>
+        <div class="operation-container">
+            <select id="operation3">
+                <option value="+">+</option>
+                <option value="-">-</option>
+                <option value="*">*</option>
+                <option value="/">/</option>
+            </select>
+            <input type="text" id="number4" placeholder="Введите число 4" value="0">
+        </div>
+        <div>
+            <button onclick="calculate()">=</button>
+        </div>
+        <div class="result">
+            <p id="result">Результат: </p>
+        </div>
+        <div class="rounding-options">
+            <p>Выбор вида округления:</p>
+            <button onclick="setRounding('math')">Математическое</button>
+            <button onclick="setRounding('banking')">Бухгалтерское</button>
+            <button onclick="setRounding('truncate')">Усечение</button>
+            <p id="roundedResult"></p>
+        </div>
+    </div>
+
+    <script>
+        let currentRounding = 'math';
+
+        function calculate() {
+            const number1 = document.getElementById('number1').value.trim() || '0';
+            const number2 = document.getElementById('number2').value.trim() || '0';
+            const number3 = document.getElementById('number3').value.trim() || '0';
+            const number4 = document.getElementById('number4').value.trim() || '0';
+            const operation1 = document.getElementById('operation1').value;
+            const operation2 = document.getElementById('operation2').value;
+            const operation3 = document.getElementById('operation3').value;
+            const formData = new FormData();
+            formData.append('number1', number1);
+            formData.append('operation1', operation1);
+            formData.append('number2', number2);
+            formData.append('operation2', operation2);
+            formData.append('number3', number3);
+            formData.append('operation3', operation3);
+            formData.append('number4', number4);
+            fetch('/calculate', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('result').innerText = 'Ошибка: ' + data.error;
+                } else {
+                    document.getElementById('result').innerText = 'Результат: ' + data.result;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').innerText = 'Ошибка: ' + error.message;
+            });
+        }
+
+        function setRounding(method) {
+            currentRounding = method;
+            fetch('/round', {
+                method: 'POST',
+                body: JSON.stringify({ method: currentRounding }),
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('roundedResult').innerText = 'Округленный результат: ' + data.rounded;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+
+</html>
